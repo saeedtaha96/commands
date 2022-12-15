@@ -1,0 +1,8 @@
+keypair :
+openssl genrsa -out keypair.pem 2048
+
+private :
+openssl pkcs8 -topk8 -inform PEM -outform PEM -in keypair.pem -out private.pem -nocrypt
+
+public : 
+openssl rsa -in keypair.pem -outform PEM -pubout -out public.pem
