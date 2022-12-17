@@ -6,3 +6,19 @@ openssl pkcs8 -topk8 -inform PEM -outform PEM -in keypair.pem -out private.pem -
 
 public : 
 openssl rsa -in keypair.pem -outform PEM -pubout -out public.pem
+
+
+// add 
+@EnableConfigurationProperties({RsaKeyProperties.class})
+// to main class
+
+
+// create model
+@ConfigurationProperties(prefix = "rsa")
+public record RsaKeyProperties(RSAPrivateKey privateKey, RSAPublicKey publicKey) {
+}
+
+// add to application.yml
+rsa:
+  private-key: classpath:/certs/private.pem
+  public-key: classpath:/certs/public.pem
