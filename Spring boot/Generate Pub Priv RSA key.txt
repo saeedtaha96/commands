@@ -22,3 +22,49 @@ public record RsaKeyProperties(RSAPrivateKey privateKey, RSAPublicKey publicKey)
 rsa:
   private-key: classpath:/certs/private.pem
   public-key: classpath:/certs/public.pem
+
+
+
+    @Bean
+    public JwtDecoder jwtDecoder() {
+        return NimbusJwtDecoder.withPublicKey(rsaKeys.publicKey()).build();
+    }
+
+    @Bean
+    public JwtEncoder jwtEncoder() {
+        JWK jwk = new RSAKey.Builder(rsaKeys.publicKey()).privateKey(rsaKeys.privateKey()).build();
+        JWKSource<SecurityContext> jwkSet = new ImmutableJWKSet<>(new JWKSet(jwk));
+        return new NimbusJwtEncoder(jwkSet);
+    }
+
+// add to filterChain
+
+http.oauth2ResourceServer(OAuth2ResourceServerConfigurer::jwt)
+
+
+// generate token based on pub and private key  in TokenService.Class
+
+@Service
+@RequiredArgsConstructor
+public class TokenService {
+    private final JwtEncoder jwtEncoder;
+
+    public String generateToken(AppUser appUser) {
+        final var now = Instant.now();
+        String scope = appUser
+                .getAuthorities()
+                .stream()
+                .map(GrantedAuthority::getAuthority)
+                .collect(Collectors.joining(" "));
+        JwtClaimsSet claimsSet = JwtClaimsSet.builder()
+                .issuer("self")
+                .issuedAt(now)
+                .expiresAt(now.plus(30, ChronoUnit.DAYS))
+                .subject(appUser.getMobileNum())
+                .claim("scope", scope)
+                .build();
+        return jwtEncoder.encode(JwtEncoderParameters.from(claimsSet)).getTokenValue();
+    }
+}
+
+
